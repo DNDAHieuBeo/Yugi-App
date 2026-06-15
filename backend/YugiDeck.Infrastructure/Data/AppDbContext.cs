@@ -15,6 +15,7 @@ public class AppDbContext : IdentityDbContext<IdentityUser>
     public DbSet<DeckCard> DeckCards => Set<DeckCard>();
     public DbSet<Duel> Duels => Set<Duel>();
     public DbSet<LPLog> LPLogs => Set<LPLog>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

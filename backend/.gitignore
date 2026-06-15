@@ -1,0 +1,16 @@
+# Build outputs
+bin/
+obj/
+
+# SQLite database
+*.db
+*.db-shm
+*.db-wal
+
+# User secrets & local config
+appsettings.Local.json
+secrets.json
+
+# Rider / VS
+.vs/
+*.user

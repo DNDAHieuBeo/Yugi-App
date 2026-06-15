@@ -1,0 +1,131 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
+using YugiDeck.Core.DTOs.Auth;
+using YugiDeck.Core.Entities;
+using YugiDeck.Core.Interfaces;
+using YugiDeck.Infrastructure.Data;
+
+namespace YugiDeck.Infrastructure.Services;
+
+public class AuthService(
+    UserManager<IdentityUser> userManager,
+    AppDbContext db,
+    IConfiguration config) : IAuthService
+{
+    public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
+    {
+        var existing = await userManager.FindByEmailAsync(request.Email);
+        if (existing is not null)
+            throw new InvalidOperationException("Email already in use.");
+
+        var user = new IdentityUser
+        {
+            UserName = request.Username,
+            Email = request.Email
+        };
+
+        var result = await userManager.CreateAsync(user, request.Password);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+
+        return await BuildResponseAsync(user);
+    }
+
+    public async Task<AuthResponse> LoginAsync(LoginRequest request)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email)
+            ?? throw new UnauthorizedAccessException("Invalid credentials.");
+
+        if (!await userManager.CheckPasswordAsync(user, request.Password))
+            throw new UnauthorizedAccessException("Invalid credentials.");
+
+        return await BuildResponseAsync(user);
+    }
+
+    public async Task<AuthResponse> RefreshAsync(string refreshToken)
+    {
+        var token = await db.RefreshTokens
+            .FirstOrDefaultAsync(t => t.Token == refreshToken && !t.IsRevoked && t.ExpiresAt > DateTime.UtcNow)
+            ?? throw new UnauthorizedAccessException("Invalid or expired refresh token.");
+
+        token.IsRevoked = true;
+        await db.SaveChangesAsync();
+
+        var user = await userManager.FindByIdAsync(token.UserId)
+            ?? throw new UnauthorizedAccessException("User not found.");
+
+        return await BuildResponseAsync(user);
+    }
+
+    public async Task RevokeAsync(string refreshToken)
+    {
+        var token = await db.RefreshTokens.FirstOrDefaultAsync(t => t.Token == refreshToken);
+        if (token is not null)
+        {
+            token.IsRevoked = true;
+            await db.SaveChangesAsync();
+        }
+    }
+
+    private async Task<AuthResponse> BuildResponseAsync(IdentityUser user)
+    {
+        var accessToken = GenerateAccessToken(user);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
+
+        return new AuthResponse
+        {
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            UserId = user.Id,
+            Username = user.UserName ?? "",
+            Email = user.Email ?? ""
+        };
+    }
+
+    private string GenerateAccessToken(IdentityUser user)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["JwtSettings:SecretKey"]!));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var expiry = int.Parse(config["JwtSettings:ExpiryMinutes"]!);
+
+        var claims = new[]
+        {
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName ?? ""),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+
+        var token = new JwtSecurityToken(
+            issuer: config["JwtSettings:Issuer"],
+            audience: config["JwtSettings:Audience"],
+            claims: claims,
+            expires: DateTime.UtcNow.AddMinutes(expiry),
+            signingCredentials: creds);
+
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private async Task<string> CreateRefreshTokenAsync(string userId)
+    {
+        var token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
+        var expiryDays = int.Parse(config["JwtSettings:RefreshTokenExpiryDays"]!);
+
+        db.RefreshTokens.Add(new RefreshToken
+        {
+            UserId = userId,
+            Token = token,
+            ExpiresAt = DateTime.UtcNow.AddDays(expiryDays),
+            CreatedAt = DateTime.UtcNow
+        });
+        await db.SaveChangesAsync();
+
+        return token;
+    }
+}
