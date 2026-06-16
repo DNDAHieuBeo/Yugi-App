@@ -23,12 +23,12 @@ export class ThemeService {
   }
 
   private getInitialTheme(): ThemeMode {
-    if (!this.isBrowser) return 'light';
+    if (!this.isBrowser) return 'dark';
 
     const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemeMode | null;
     if (stored === 'light' || stored === 'dark') return stored;
 
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    return 'dark';
   }
 
   private applyTheme(mode: ThemeMode): void {
