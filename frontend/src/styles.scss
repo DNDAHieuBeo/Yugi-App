@@ -1,1 +1,77 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties ─── */
+:root {
+  --color-bg:          #ffffff;
+  --color-surface:     #f9fafb;
+  --color-surface-2:   #f3f4f6;
+  --color-border:      #e5e7eb;
+  --color-text:        #111827;
+  --color-text-muted:  #6b7280;
+  --color-primary:     #16a34a;
+  --color-primary-hover: #15803d;
+}
+
+.dark {
+  --color-bg:          #0f172a;
+  --color-surface:     #1e293b;
+  --color-surface-2:   #273549;
+  --color-border:      #334155;
+  --color-text:        #f1f5f9;
+  --color-text-muted:  #94a3b8;
+  --color-primary:     #22c55e;
+  --color-primary-hover: #4ade80;
+}
+
+/* ─── Base ─── */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: Inter, system-ui, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  margin: 0;
+}
+
+/* ─── Scrollbar (Webkit) ─── */
+::-webkit-scrollbar        { width: 6px; height: 6px; }
+::-webkit-scrollbar-track  { background: var(--color-surface); }
+::-webkit-scrollbar-thumb  { background: var(--color-border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
+
+/* ─── Utility classes using CSS vars ─── */
+@layer components {
+  .btn-primary {
+    @apply px-4 py-2 rounded-lg font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    background-color: var(--color-primary);
+    color: #ffffff;
+    focus-ring-color: var(--color-primary);
+
+    &:hover { background-color: var(--color-primary-hover); }
+  }
+
+  .card-surface {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    @apply rounded-xl shadow-sm;
+  }
+
+  .input-base {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    @apply rounded-lg px-3 py-2 w-full transition-colors duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500;
+
+    &::placeholder { color: var(--color-text-muted); }
+  }
+}

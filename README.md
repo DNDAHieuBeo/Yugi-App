@@ -1,4 +1,4 @@
-# YugiDeck
+# CardVault
 
 > A full-stack web application for Yu-Gi-Oh! players to manage their card collection, build competitive decks, and run in-game utilities during matches.
 
@@ -19,10 +19,10 @@
 
 ## Architecture
 
-YugiDeck is a **monorepo** containing a separate backend and frontend application.
+CardVault is a **monorepo** containing a separate backend and frontend application.
 
 ```
-YugiDeck/
+CardVault/
 ├── backend/          <- ASP.NET Core Web API (.NET 10) - Clean Architecture
 │   ├── YugiDeck.API/
 │   ├── YugiDeck.Core/
@@ -168,8 +168,8 @@ API will be available at:
   },
   "JwtSettings": {
     "SecretKey": "your-super-secret-key-minimum-32-characters-long",
-    "Issuer": "YugiDeckAPI",
-    "Audience": "YugiDeckClient",
+    "Issuer": "CardVaultAPI",
+    "Audience": "CardVaultClient",
     "ExpiryMinutes": 60,
     "RefreshTokenExpiryDays": 7
   },
@@ -272,12 +272,14 @@ npm run serve:ssr:frontend  # Run SSR production server
 - [x] All domain entities defined
 - [x] AppDbContext with ASP.NET Identity
 - [x] EF Core migration applied (SQLite DB created)
-- [ ] JWT Auth + Identity wired in Program.cs
-- [ ] AuthController - register / login / refresh
-- [ ] CardsController + YGOPRODeck sync service
-- [ ] CollectionController
-- [ ] DecksController + validation logic
-- [ ] DuelsController + LP tracking
+- [x] JWT Auth + Identity wired in Program.cs
+- [x] AuthController - register / login / refresh / revoke
+- [x] CardsController + YGOPRODeck sync service
+- [x] CollectionController
+- [x] DecksController + validation logic
+- [x] DuelsController + LP tracking
+- [x] Global exception handler middleware
+- [x] Swagger with JWT Authorization button
 
 ### Frontend
 
