@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using YugiDeck.API.Mapping;
+using YugiDeck.API.Middleware;
 using YugiDeck.Core.Interfaces;
 using YugiDeck.Infrastructure.Data;
 using YugiDeck.Infrastructure.Services;
@@ -61,7 +63,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddHttpClient("YgoApi");
 
 // AutoMapper
-builder.Services.AddAutoMapper(typeof(MappingProfile));
+builder.Services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
 
 // Application Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -76,9 +78,24 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new() { Title = "YugiDeck API", Version = "v1" });
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name        = "Authorization",
+        Type        = SecuritySchemeType.Http,
+        Scheme      = "bearer",
+        BearerFormat = "JWT",
+        In          = ParameterLocation.Header,
+        Description = "Enter your JWT token here"
+    });
+    c.AddSecurityRequirement(doc => new OpenApiSecurityRequirement
+    {
+        { new OpenApiSecuritySchemeReference("Bearer", doc, null), [] }
+    });
 });
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {

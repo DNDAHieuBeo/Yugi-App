@@ -86,8 +86,7 @@ public class DeckService(AppDbContext db) : IDeckService
         deck.UpdatedAt = DateTime.UtcNow;
 
         db.DeckCards.RemoveRange(deck.DeckCards);
-        await db.SaveChangesAsync();
-
+        // No SaveChangesAsync here — ApplyDeckCardsAsync saves both removes and adds in one trip
         await ApplyDeckCardsAsync(deck, request);
 
         return await GetDeckByIdAsync(userId, deckId);
@@ -114,21 +113,29 @@ public class DeckService(AppDbContext db) : IDeckService
             return new DeckValidationResult { IsValid = false, Errors = ["Deck not found."] };
 
         var errors = new List<string>();
-        var main = deck.DeckCards.Where(dc => dc.Section == "main").ToList();
+        var main  = deck.DeckCards.Where(dc => dc.Section == "main").ToList();
         var extra = deck.DeckCards.Where(dc => dc.Section == "extra").ToList();
-        var side = deck.DeckCards.Where(dc => dc.Section == "side").ToList();
+        var side  = deck.DeckCards.Where(dc => dc.Section == "side").ToList();
 
-        if (main.Count < 40) errors.Add($"Main deck has {main.Count} cards (minimum 40).");
-        if (main.Count > 60) errors.Add($"Main deck has {main.Count} cards (maximum 60).");
+        if (main.Count < 40)  errors.Add($"Main deck has {main.Count} cards (minimum 40).");
+        if (main.Count > 60)  errors.Add($"Main deck has {main.Count} cards (maximum 60).");
         if (extra.Count > 15) errors.Add($"Extra deck has {extra.Count} cards (maximum 15).");
-        if (side.Count > 15) errors.Add($"Side deck has {side.Count} cards (maximum 15).");
+        if (side.Count > 15)  errors.Add($"Side deck has {side.Count} cards (maximum 15).");
 
+        // Validate extra deck card types
+        foreach (var dc in extra)
+        {
+            if (!ExtraTypes.Contains(dc.Card.Type))
+                errors.Add($"\"{dc.Card.Name}\" ({dc.Card.Type}) cannot be placed in the Extra Deck.");
+        }
+
+        // Banlist + copy limit check (main + side only)
         var allCards = main.Concat(side).GroupBy(dc => dc.CardId);
         foreach (var group in allCards)
         {
-            var card = group.First().Card;
+            var card  = group.First().Card;
             var count = group.Count();
-            var ban = card.BanTcg?.ToLower();
+            var ban   = card.BanTcg?.ToLower();
 
             if (ban == "banned" && count > 0)
                 errors.Add($"\"{card.Name}\" is Banned (0 copies allowed).");
@@ -145,13 +152,17 @@ public class DeckService(AppDbContext db) : IDeckService
 
     private async Task ApplyDeckCardsAsync(Deck deck, SaveDeckRequest request)
     {
-        var allIds = request.MainDeck.Concat(request.ExtraDeck).Concat(request.SideDeck).Distinct();
-        var cards = await db.Cards.Where(c => allIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id);
+        var allIds = request.MainDeck.Concat(request.ExtraDeck).Concat(request.SideDeck).Distinct().ToList();
+        var validIds = await db.Cards.Where(c => allIds.Contains(c.Id)).Select(c => c.Id).ToHashSetAsync();
+
+        var missing = allIds.Except(validIds).ToList();
+        if (missing.Count > 0)
+            throw new ArgumentException($"Card IDs not found: {string.Join(", ", missing)}");
 
         var deckCards = new List<DeckCard>();
-        deckCards.AddRange(request.MainDeck.Select(id => new DeckCard { DeckId = deck.Id, CardId = id, Section = "main" }));
+        deckCards.AddRange(request.MainDeck.Select(id  => new DeckCard { DeckId = deck.Id, CardId = id, Section = "main" }));
         deckCards.AddRange(request.ExtraDeck.Select(id => new DeckCard { DeckId = deck.Id, CardId = id, Section = "extra" }));
-        deckCards.AddRange(request.SideDeck.Select(id => new DeckCard { DeckId = deck.Id, CardId = id, Section = "side" }));
+        deckCards.AddRange(request.SideDeck.Select(id  => new DeckCard { DeckId = deck.Id, CardId = id, Section = "side" }));
 
         db.DeckCards.AddRange(deckCards);
         await db.SaveChangesAsync();

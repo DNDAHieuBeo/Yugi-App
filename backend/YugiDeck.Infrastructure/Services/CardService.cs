@@ -69,12 +69,17 @@ public class CardService(
         var root = JsonDocument.Parse(json).RootElement;
         var cardData = root.GetProperty("data");
 
-        int synced = 0;
+        // Load all existing IDs in one query — avoids N+1 (12,000 FindAsync calls)
+        var existingIds = await db.Cards.Select(c => c.Id).ToHashSetAsync();
+        var existingCards = existingIds.Count > 0
+            ? await db.Cards.ToDictionaryAsync(c => c.Id)
+            : [];
+
+        int added = 0, updated = 0;
 
         foreach (var item in cardData.EnumerateArray())
         {
             var id = item.GetProperty("id").GetInt32();
-            var existing = await db.Cards.FindAsync(id);
 
             var imageUrl = "";
             var imageUrlSmall = "";
@@ -94,53 +99,44 @@ public class CardService(
                 banOcg = ocg.ValueKind == JsonValueKind.String ? ocg.GetString() : null;
             }
 
-            if (existing is null)
+            var name      = item.GetProperty("name").GetString() ?? "";
+            var type      = item.GetProperty("type").GetString() ?? "";
+            var frameType = item.TryGetProperty("frameType", out var ft)  ? ft.GetString()  ?? "" : "";
+            var desc      = item.GetProperty("desc").GetString() ?? "";
+            var atk       = item.TryGetProperty("atk",       out var atkV) && atkV.ValueKind == JsonValueKind.Number ? atkV.GetInt32() : (int?)null;
+            var def       = item.TryGetProperty("def",       out var defV) && defV.ValueKind == JsonValueKind.Number ? defV.GetInt32() : (int?)null;
+            var level     = item.TryGetProperty("level",     out var lvlV) && lvlV.ValueKind == JsonValueKind.Number ? lvlV.GetInt32() : (int?)null;
+            var race      = item.TryGetProperty("race",      out var raceV)  ? raceV.GetString()  : null;
+            var attribute = item.TryGetProperty("attribute", out var attrV)  ? attrV.GetString()  : null;
+            var archetype = item.TryGetProperty("archetype", out var archV)  ? archV.GetString()  : null;
+
+            if (!existingIds.Contains(id))
             {
                 db.Cards.Add(new Card
                 {
-                    Id = id,
-                    Name = item.GetProperty("name").GetString() ?? "",
-                    Type = item.GetProperty("type").GetString() ?? "",
-                    FrameType = item.TryGetProperty("frameType", out var ft) ? ft.GetString() ?? "" : "",
-                    Desc = item.GetProperty("desc").GetString() ?? "",
-                    Atk = item.TryGetProperty("atk", out var atk) && atk.ValueKind == JsonValueKind.Number ? atk.GetInt32() : null,
-                    Def = item.TryGetProperty("def", out var def) && def.ValueKind == JsonValueKind.Number ? def.GetInt32() : null,
-                    Level = item.TryGetProperty("level", out var lvl) && lvl.ValueKind == JsonValueKind.Number ? lvl.GetInt32() : null,
-                    Race = item.TryGetProperty("race", out var race) ? race.GetString() : null,
-                    Attribute = item.TryGetProperty("attribute", out var attr) ? attr.GetString() : null,
-                    Archetype = item.TryGetProperty("archetype", out var arch) ? arch.GetString() : null,
-                    ImageUrl = imageUrl,
-                    ImageUrlSmall = imageUrlSmall,
-                    BanTcg = banTcg,
-                    BanOcg = banOcg,
-                    SyncedAt = DateTime.UtcNow
+                    Id = id, Name = name, Type = type, FrameType = frameType, Desc = desc,
+                    Atk = atk, Def = def, Level = level, Race = race,
+                    Attribute = attribute, Archetype = archetype,
+                    ImageUrl = imageUrl, ImageUrlSmall = imageUrlSmall,
+                    BanTcg = banTcg, BanOcg = banOcg, SyncedAt = DateTime.UtcNow
                 });
-                synced++;
+                added++;
             }
             else
             {
-                existing.Name = item.GetProperty("name").GetString() ?? "";
-                existing.Type = item.GetProperty("type").GetString() ?? "";
-                existing.FrameType = item.TryGetProperty("frameType", out var ft2) ? ft2.GetString() ?? "" : "";
-                existing.Desc = item.GetProperty("desc").GetString() ?? "";
-                existing.Atk = item.TryGetProperty("atk", out var atk2) && atk2.ValueKind == JsonValueKind.Number ? atk2.GetInt32() : null;
-                existing.Def = item.TryGetProperty("def", out var def2) && def2.ValueKind == JsonValueKind.Number ? def2.GetInt32() : null;
-                existing.Level = item.TryGetProperty("level", out var lvl2) && lvl2.ValueKind == JsonValueKind.Number ? lvl2.GetInt32() : null;
-                existing.Race = item.TryGetProperty("race", out var race2) ? race2.GetString() : null;
-                existing.Attribute = item.TryGetProperty("attribute", out var attr2) ? attr2.GetString() : null;
-                existing.Archetype = item.TryGetProperty("archetype", out var arch2) ? arch2.GetString() : null;
-                existing.ImageUrl = imageUrl;
-                existing.ImageUrlSmall = imageUrlSmall;
-                existing.BanTcg = banTcg;
-                existing.BanOcg = banOcg;
-                existing.SyncedAt = DateTime.UtcNow;
-                synced++;
+                var existing = existingCards[id];
+                existing.Name = name; existing.Type = type; existing.FrameType = frameType;
+                existing.Desc = desc; existing.Atk = atk; existing.Def = def; existing.Level = level;
+                existing.Race = race; existing.Attribute = attribute; existing.Archetype = archetype;
+                existing.ImageUrl = imageUrl; existing.ImageUrlSmall = imageUrlSmall;
+                existing.BanTcg = banTcg; existing.BanOcg = banOcg; existing.SyncedAt = DateTime.UtcNow;
+                updated++;
             }
         }
 
         await db.SaveChangesAsync();
-        logger.LogInformation("Synced {Count} cards.", synced);
-        return synced;
+        logger.LogInformation("Sync complete: {Added} added, {Updated} updated.", added, updated);
+        return added + updated;
     }
 
     private static CardDto ToDto(Card c) => new()
