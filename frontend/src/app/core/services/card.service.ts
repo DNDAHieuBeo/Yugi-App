@@ -12,11 +12,19 @@ export class CardService {
   getCards(filter: CardFilter = {}): Observable<PagedResult<Card>> {
     let params = new HttpParams();
     if (filter.name) params = params.set('name', filter.name);
+    if (filter.desc) params = params.set('desc', filter.desc);
+    if (filter.category) params = params.set('category', filter.category);
     if (filter.type) params = params.set('type', filter.type);
     if (filter.race) params = params.set('race', filter.race);
     if (filter.attribute) params = params.set('attribute', filter.attribute);
     if (filter.archetype) params = params.set('archetype', filter.archetype);
+    if (filter.level != null) params = params.set('level', filter.level.toString());
+    if (filter.minAtk != null) params = params.set('minAtk', filter.minAtk.toString());
+    if (filter.maxAtk != null) params = params.set('maxAtk', filter.maxAtk.toString());
+    if (filter.minDef != null) params = params.set('minDef', filter.minDef.toString());
+    if (filter.maxDef != null) params = params.set('maxDef', filter.maxDef.toString());
     if (filter.banTcg) params = params.set('banTcg', filter.banTcg);
+    if (filter.orderBy) params = params.set('orderBy', filter.orderBy);
     if (filter.page) params = params.set('page', filter.page.toString());
     if (filter.pageSize) params = params.set('pageSize', filter.pageSize.toString());
     return this.http.get<PagedResult<Card>>(this.api, { params });

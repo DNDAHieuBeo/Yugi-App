@@ -1,8 +1,8 @@
 <div class="h-full flex flex-col" style="background-color: var(--color-bg)">
 
   <!-- Header -->
-  <div class="px-6 py-5 border-b flex flex-wrap items-center gap-3" style="border-color: var(--color-border)">
-    <div class="flex-1 min-w-0">
+  <div class="px-6 py-4 border-b flex items-center gap-3" style="border-color: var(--color-border)">
+    <div class="flex-1">
       <h1 class="text-xl font-bold" style="color: var(--color-text)">Card Browser</h1>
       @if (result()) {
         <p class="text-xs mt-0.5" style="color: var(--color-text-muted)">
@@ -10,71 +10,161 @@
         </p>
       }
     </div>
-    <!-- Sync button -->
-    <button (click)="syncCards()" [disabled]="syncing()"
-            class="btn-primary flex items-center gap-2 px-4 py-2 text-sm">
+    @if (syncMessage()) {
+      <span class="text-xs font-medium" [style.color]="syncMessage().includes('failed') ? '#f87171' : '#4ade80'">
+        {{ syncMessage() }}
+      </span>
+    }
+    <button (click)="syncCards()" [disabled]="syncing()" class="btn-primary flex items-center gap-2 px-4 py-2 text-sm shrink-0">
       @if (syncing()) {
         <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
           <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-        </svg>
-        Syncing...
+        </svg>Syncing...
       } @else {
         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round"
             d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-        Sync Cards
+        </svg>Sync Cards
       }
     </button>
   </div>
 
-  <!-- Sync message -->
-  @if (syncMessage()) {
-    <div class="px-6 py-2 text-sm font-medium"
-         [style.color]="syncMessage().includes('failed') ? '#f87171' : '#4ade80'">
-      {{ syncMessage() }}
-    </div>
-  }
+  <!-- Filter panel -->
+  <div class="px-6 py-3 border-b" style="border-color: var(--color-border)">
+    <div class="grid grid-cols-[auto_1fr_auto_1fr] gap-x-3 gap-y-2 items-center">
 
-  <!-- Filters -->
-  <div class="px-6 py-3 border-b flex flex-wrap gap-2" style="border-color: var(--color-border)">
-    <!-- Search -->
-    <div class="flex-1 min-w-48 relative">
-      <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" fill="none" viewBox="0 0 24 24"
-           stroke="currentColor" style="color: var(--color-text-muted)">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
-      </svg>
-      <input [(ngModel)]="searchName" (keyup.enter)="search()"
-             placeholder="Search by name..."
-             class="input-base pl-9 text-sm" />
+      <!-- Row 1 -->
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Name:</label>
+      <input [(ngModel)]="filterName" (keyup.enter)="search()"
+             placeholder="Card name..." class="input-base text-xs py-1.5" />
+
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Desc:</label>
+      <input [(ngModel)]="filterDesc" (keyup.enter)="search()"
+             placeholder="Text in description..." class="input-base text-xs py-1.5" />
+
+      <!-- Row 2 -->
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Card:</label>
+      <select [(ngModel)]="filterCategory" (change)="onCategoryChange()" class="input-base text-xs py-1.5">
+        <option value="">All</option>
+        <option value="Monster">Monster</option>
+        <option value="Spell">Spell</option>
+        <option value="Trap">Trap</option>
+      </select>
+
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Type:</label>
+      <select [(ngModel)]="filterType" (change)="search()" class="input-base text-xs py-1.5">
+        <option value="">All Types</option>
+        @if (!filterCategory || filterCategory === 'Monster') {
+          <optgroup label="── Monster ──">
+            @for (t of monsterTypes; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </optgroup>
+        }
+        @if (!filterCategory || filterCategory === 'Spell') {
+          <optgroup label="── Spell ──">
+            @for (t of spellTypes; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </optgroup>
+        }
+        @if (!filterCategory || filterCategory === 'Trap') {
+          <optgroup label="── Trap ──">
+            @for (t of trapTypes; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+
+      <!-- Row 3 -->
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Race:</label>
+      <select [(ngModel)]="filterRace" (change)="search()" class="input-base text-xs py-1.5">
+        <option value="">All</option>
+        @for (r of availableRaces; track r) {
+          <option [value]="r">{{ r }}</option>
+        }
+      </select>
+
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Attrib:</label>
+      <select [(ngModel)]="filterAttribute" (change)="search()" class="input-base text-xs py-1.5"
+              [disabled]="filterCategory === 'Spell' || filterCategory === 'Trap'">
+        <option value="">All</option>
+        @for (a of attributes; track a) {
+          <option [value]="a">{{ a }}</option>
+        }
+      </select>
+
+      <!-- Row 4 -->
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Level:</label>
+      <select [(ngModel)]="filterLevel" (change)="search()" class="input-base text-xs py-1.5"
+              [disabled]="filterCategory === 'Spell' || filterCategory === 'Trap'">
+        <option value="">Any</option>
+        @for (l of levels; track l) {
+          <option [value]="l">{{ l }}</option>
+        }
+      </select>
+
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Limit:</label>
+      <select [(ngModel)]="filterBan" (change)="search()" class="input-base text-xs py-1.5">
+        <option value="">All</option>
+        <option value="Unlimited">Unlimited</option>
+        @for (b of banStatuses; track b) {
+          <option [value]="b">{{ b }}</option>
+        }
+      </select>
+
+      <!-- Row 5: ATK / DEF range -->
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">ATK:</label>
+      <div class="flex items-center gap-1.5">
+        <input [(ngModel)]="filterMinAtk" (keyup.enter)="search()" type="number" min="0"
+               placeholder="min" class="input-base text-xs py-1.5 w-24 text-center"
+               [disabled]="filterCategory === 'Spell' || filterCategory === 'Trap'" />
+        <span class="text-xs shrink-0" style="color: var(--color-text-muted)">–</span>
+        <input [(ngModel)]="filterMaxAtk" (keyup.enter)="search()" type="number" min="0"
+               placeholder="max" class="input-base text-xs py-1.5 w-24 text-center"
+               [disabled]="filterCategory === 'Spell' || filterCategory === 'Trap'" />
+      </div>
+
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">DEF:</label>
+      <div class="flex items-center gap-1.5">
+        <input [(ngModel)]="filterMinDef" (keyup.enter)="search()" type="number" min="0"
+               placeholder="min" class="input-base text-xs py-1.5 w-24 text-center"
+               [disabled]="filterCategory === 'Spell' || filterCategory === 'Trap'" />
+        <span class="text-xs shrink-0" style="color: var(--color-text-muted)">–</span>
+        <input [(ngModel)]="filterMaxDef" (keyup.enter)="search()" type="number" min="0"
+               placeholder="max" class="input-base text-xs py-1.5 w-24 text-center"
+               [disabled]="filterCategory === 'Spell' || filterCategory === 'Trap'" />
+      </div>
+
+      <!-- Row 6: Order + actions -->
+      <label class="text-xs font-semibold text-right" style="color: var(--color-text-muted)">Order:</label>
+      <select [(ngModel)]="filterOrder" (change)="search()" class="input-base text-xs py-1.5">
+        @for (o of orderOptions; track o.value) {
+          <option [value]="o.value">{{ o.label }}</option>
+        }
+      </select>
+
+      <span></span>
+      <div class="flex gap-2">
+        <button (click)="reset()"
+                class="px-4 py-1.5 rounded text-xs font-medium transition-colors"
+                style="background-color: var(--color-surface-2); color: var(--color-text-muted)">
+          Reset
+        </button>
+        <button (click)="search()" class="btn-primary px-6 py-1.5 text-xs font-semibold">
+          Search
+        </button>
+      </div>
+
     </div>
-    <!-- Type filter -->
-    <select [(ngModel)]="selectedType" (change)="search()"
-            class="input-base text-sm min-w-36">
-      <option value="">All Types</option>
-      @for (t of cardTypes; track t) {
-        <option [value]="t">{{ t }}</option>
-      }
-    </select>
-    <!-- Attribute filter -->
-    <select [(ngModel)]="selectedAttribute" (change)="search()"
-            class="input-base text-sm min-w-36">
-      <option value="">All Attributes</option>
-      @for (a of attributes; track a) {
-        <option [value]="a">{{ a }}</option>
-      }
-    </select>
-    <!-- Search button -->
-    <button (click)="search()" class="btn-primary px-4 py-2 text-sm">Search</button>
   </div>
 
-  <!-- Content -->
+  <!-- Card grid -->
   <div class="flex-1 overflow-y-auto px-6 py-4">
 
     @if (loading()) {
-      <!-- Skeleton -->
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
           <div class="rounded-lg overflow-hidden animate-pulse" style="background-color: var(--color-surface)">
@@ -88,167 +178,127 @@
       </div>
 
     } @else if (!result() || result()!.items.length === 0) {
-      <!-- Empty state -->
       <div class="flex flex-col items-center justify-center py-20 gap-4">
         <svg class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"
              style="color: var(--color-text-muted)">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+            d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
         <div class="text-center">
           <p class="font-medium" style="color: var(--color-text)">No cards found</p>
-          <p class="text-sm mt-1" style="color: var(--color-text-muted)">
-            Try syncing cards first or adjust your filters
-          </p>
+          <p class="text-sm mt-1" style="color: var(--color-text-muted)">Try adjusting your filters or sync card data first</p>
         </div>
-        <button (click)="syncCards()" [disabled]="syncing()" class="btn-primary px-5 py-2 text-sm">
-          Sync from YGOProDeck
-        </button>
+        <div class="flex gap-3">
+          <button (click)="reset()" class="px-4 py-2 text-sm rounded transition-colors"
+                  style="background-color: var(--color-surface-2); color: var(--color-text)">Reset Filters</button>
+          <button (click)="syncCards()" [disabled]="syncing()" class="btn-primary px-4 py-2 text-sm">
+            Sync from YGOProDeck
+          </button>
+        </div>
       </div>
 
     } @else {
-      <!-- Card grid -->
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
         @for (card of result()!.items; track card.id) {
           <button (click)="openDetail(card)"
                   class="rounded-lg overflow-hidden text-left transition-transform hover:scale-105 hover:shadow-lg focus:outline-none"
                   style="background-color: var(--color-surface)">
-            <!-- Card image -->
             <div class="aspect-[59/86] relative overflow-hidden bg-gray-800">
               @if (card.imageUrlSmall) {
-                <img [src]="card.imageUrlSmall" [alt]="card.name"
-                     class="w-full h-full object-cover" loading="lazy" />
+                <img [src]="card.imageUrlSmall" [alt]="card.name" class="w-full h-full object-cover" loading="lazy" />
               } @else {
-                <div class="w-full h-full flex items-center justify-center text-4xl"
-                     [style.background-color]="typeColor(card)">
-                  🃏
-                </div>
+                <div class="w-full h-full flex items-center justify-center text-4xl">🃏</div>
               }
             </div>
-            <!-- Card info -->
             <div class="p-2">
-              <p class="text-xs font-medium leading-tight line-clamp-2" style="color: var(--color-text)">
-                {{ card.name }}
-              </p>
-              <p class="text-xs mt-0.5 truncate" style="color: var(--color-text-muted)">
-                {{ card.type }}
-              </p>
+              <p class="text-xs font-medium leading-tight line-clamp-2" style="color: var(--color-text)">{{ card.name }}</p>
+              <p class="text-xs mt-0.5 truncate" style="color: var(--color-text-muted)">{{ card.type }}</p>
             </div>
           </button>
         }
       </div>
 
-      <!-- Pagination -->
       @if (result()!.totalPages > 1) {
         <div class="flex items-center justify-center gap-2 mt-6">
           <button (click)="loadCards(currentPage() - 1)" [disabled]="currentPage() === 1"
-                  class="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-40 transition-colors"
-                  style="background-color: var(--color-surface); color: var(--color-text)">
-            ← Prev
-          </button>
+                  class="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-40"
+                  style="background-color: var(--color-surface); color: var(--color-text)">← Prev</button>
           <span class="text-sm px-2" style="color: var(--color-text-muted)">
             Page {{ currentPage() }} of {{ result()!.totalPages }}
           </span>
           <button (click)="loadCards(currentPage() + 1)" [disabled]="currentPage() === result()!.totalPages"
-                  class="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-40 transition-colors"
-                  style="background-color: var(--color-surface); color: var(--color-text)">
-            Next →
-          </button>
+                  class="px-3 py-1.5 rounded text-sm font-medium disabled:opacity-40"
+                  style="background-color: var(--color-surface); color: var(--color-text)">Next →</button>
         </div>
       }
     }
   </div>
 </div>
 
-<!-- Card detail slide-in panel -->
+<!-- Detail panel -->
 @if (selectedCard()) {
   <div class="fixed inset-0 z-50 flex justify-end" (click)="closeDetail()">
     <div class="absolute inset-0 bg-black/50"></div>
     <div class="relative w-full max-w-sm h-full overflow-y-auto shadow-2xl flex flex-col"
-         style="background-color: var(--color-surface)"
-         (click)="$event.stopPropagation()">
-
-      <!-- Close button -->
-      <button (click)="closeDetail()"
-              class="absolute top-4 right-4 p-1.5 rounded-lg z-10 transition-colors"
+         style="background-color: var(--color-surface)" (click)="$event.stopPropagation()">
+      <button (click)="closeDetail()" class="absolute top-4 right-4 p-1.5 rounded-lg z-10"
               style="color: var(--color-text-muted); background-color: var(--color-surface-2)">
         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
-
-      <!-- Card image -->
       <div class="w-full aspect-[59/86] max-h-72 overflow-hidden bg-gray-900 shrink-0">
         @if (selectedCard()!.imageUrl) {
-          <img [src]="selectedCard()!.imageUrl" [alt]="selectedCard()!.name"
-               class="w-full h-full object-contain" />
+          <img [src]="selectedCard()!.imageUrl" [alt]="selectedCard()!.name" class="w-full h-full object-contain" />
         } @else {
           <div class="w-full h-full flex items-center justify-center text-6xl">🃏</div>
         }
       </div>
-
-      <!-- Card info -->
       <div class="p-5 space-y-4 flex-1">
         <div>
-          <h2 class="text-lg font-bold leading-tight" style="color: var(--color-text)">
-            {{ selectedCard()!.name }}
-          </h2>
+          <h2 class="text-lg font-bold leading-tight" style="color: var(--color-text)">{{ selectedCard()!.name }}</h2>
           <p class="text-sm mt-1" style="color: var(--color-text-muted)">{{ selectedCard()!.type }}</p>
         </div>
-
-        <!-- Stats (monsters) -->
         @if (isMonster(selectedCard()!)) {
-          <div class="flex gap-4 text-sm">
+          <div class="flex flex-wrap gap-2 text-xs">
             @if (selectedCard()!.attribute) {
-              <span class="font-medium" style="color: var(--color-text-muted)">
+              <span class="px-2 py-0.5 rounded font-bold"
+                    style="background-color: var(--color-surface-2); color: var(--color-text)">
                 {{ selectedCard()!.attribute }}
               </span>
             }
+            @if (selectedCard()!.race) {
+              <span style="color: var(--color-text-muted)">{{ selectedCard()!.race }}</span>
+            }
             @if (selectedCard()!.level) {
-              <span style="color: var(--color-text-muted)">⭐ {{ selectedCard()!.level }}</span>
-            }
-            @if (selectedCard()!.atk !== null && selectedCard()!.atk !== undefined) {
-              <span style="color: var(--color-text-muted)">ATK {{ selectedCard()!.atk }}</span>
-            }
-            @if (selectedCard()!.def !== null && selectedCard()!.def !== undefined) {
-              <span style="color: var(--color-text-muted)">DEF {{ selectedCard()!.def }}</span>
+              <span style="color: #f59e0b">⭐ Lv {{ selectedCard()!.level }}</span>
             }
           </div>
-          @if (selectedCard()!.race) {
-            <p class="text-xs" style="color: var(--color-text-muted)">
-              {{ selectedCard()!.race }} / {{ selectedCard()!.attribute }}
-            </p>
+          @if (selectedCard()!.atk !== null && selectedCard()!.atk !== undefined) {
+            <div class="flex gap-4 text-sm font-semibold" style="color: var(--color-text)">
+              <span>ATK {{ selectedCard()!.atk }}</span>
+              @if (selectedCard()!.def !== null && selectedCard()!.def !== undefined) {
+                <span style="color: var(--color-text-muted)">DEF {{ selectedCard()!.def }}</span>
+              }
+            </div>
           }
         }
-
-        <!-- Description -->
-        <div>
-          <p class="text-xs leading-relaxed" style="color: var(--color-text-muted)">
-            {{ selectedCard()!.desc }}
-          </p>
-        </div>
-
-        <!-- Ban status -->
+        <p class="text-xs leading-relaxed" style="color: var(--color-text-muted)">{{ selectedCard()!.desc }}</p>
         @if (selectedCard()!.banTcg) {
-          <div class="flex gap-2 text-xs">
-            <span class="px-2 py-0.5 rounded font-medium"
-                  [class]="selectedCard()!.banTcg === 'Banned' ? 'bg-red-900/40 text-red-400' :
-                            selectedCard()!.banTcg === 'Limited' ? 'bg-amber-900/40 text-amber-400' :
-                            'bg-yellow-900/40 text-yellow-400'">
-              TCG: {{ selectedCard()!.banTcg }}
-            </span>
-          </div>
+          <span class="inline-block text-xs px-2 py-0.5 rounded font-medium"
+                [class]="selectedCard()!.banTcg === 'Forbidden' ? 'bg-red-900/40 text-red-400' :
+                          selectedCard()!.banTcg === 'Limited' ? 'bg-amber-900/40 text-amber-400' :
+                          'bg-yellow-900/40 text-yellow-400'">
+            TCG: {{ selectedCard()!.banTcg }}
+          </span>
         }
-
-        <!-- Add to Collection -->
         <button (click)="addToCollection(selectedCard()!)" [disabled]="addingToCollection() || addSuccess()"
                 class="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-sm">
           @if (addingToCollection()) {
             <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
               <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-            </svg>
-            Adding...
+            </svg>Adding...
           } @else if (addSuccess()) {
             ✓ Added to Collection
           } @else {

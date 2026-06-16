@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { resolveApiError } from '../../../core/utils/error.utils';
 
 @Component({
   selector: 'app-login',
@@ -26,10 +27,7 @@ export class LoginComponent {
   });
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      return;
-    }
+    if (this.form.invalid) return;
 
     this.loading.set(true);
     this.errorMessage.set('');
@@ -38,7 +36,7 @@ export class LoginComponent {
     this.authService.login({ email: email!, password: password! }).subscribe({
       next: () => this.router.navigate(['/cards']),
       error: err => {
-        this.errorMessage.set(err.error?.message ?? 'Incorrect email or password.');
+        this.errorMessage.set(resolveApiError(err));
         this.loading.set(false);
       },
     });

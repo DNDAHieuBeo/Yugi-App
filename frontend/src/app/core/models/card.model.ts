@@ -18,11 +18,19 @@ export interface Card {
 
 export interface CardFilter {
   name?: string;
+  desc?: string;
+  category?: string;
   type?: string;
   race?: string;
   attribute?: string;
   archetype?: string;
+  level?: number;
+  minAtk?: number;
+  maxAtk?: number;
+  minDef?: number;
+  maxDef?: number;
   banTcg?: string;
+  orderBy?: string;
   page?: number;
   pageSize?: number;
 }

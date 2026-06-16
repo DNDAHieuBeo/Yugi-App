@@ -3,6 +3,7 @@ import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Va
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
+import { resolveApiError } from '../../../core/utils/error.utils';
 
 function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
   const password = control.get('password')?.value;
@@ -38,10 +39,11 @@ export class RegisterComponent {
   );
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    if (this.form.hasError('passwordMismatch') && this.form.get('confirmPassword')?.dirty) {
+      this.errorMessage.set('Passwords do not match.');
       return;
     }
+    if (this.form.invalid) return;
 
     this.loading.set(true);
     this.errorMessage.set('');
@@ -50,7 +52,7 @@ export class RegisterComponent {
     this.authService.register({ username: username!, email: email!, password: password! }).subscribe({
       next: () => this.router.navigate(['/cards']),
       error: err => {
-        this.errorMessage.set(err.error?.message ?? 'Registration failed. Please try again.');
+        this.errorMessage.set(resolveApiError(err));
         this.loading.set(false);
       },
     });

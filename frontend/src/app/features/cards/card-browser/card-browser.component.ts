@@ -4,13 +4,37 @@ import { CardService } from '../../../core/services/card.service';
 import { CollectionService } from '../../../core/services/collection.service';
 import { Card, CardFilter, PagedResult } from '../../../core/models/card.model';
 
-const CARD_TYPES = [
-  'Normal Monster', 'Effect Monster', 'Fusion Monster', 'Ritual Monster',
-  'Synchro Monster', 'XYZ Monster', 'Link Monster', 'Spell Card', 'Trap Card',
-  'Pendulum Effect Monster', 'Tuner Monster'
+const MONSTER_RACES = [
+  'Aqua', 'Beast', 'Beast-Warrior', 'Cyberse', 'Dinosaur', 'Divine-Beast',
+  'Dragon', 'Fairy', 'Fiend', 'Fish', 'Illusion', 'Insect', 'Machine',
+  'Plant', 'Psychic', 'Pyro', 'Reptile', 'Rock', 'Sea Serpent',
+  'Spellcaster', 'Thunder', 'Warrior', 'Winged Beast', 'Wyrm', 'Zombie',
 ];
+const SPELL_RACES = ['Normal', 'Quick-Play', 'Continuous', 'Equip', 'Field', 'Ritual'];
+const TRAP_RACES  = ['Normal', 'Continuous', 'Counter'];
+
+const MONSTER_TYPES = [
+  'Normal Monster', 'Effect Monster', 'Flip Effect Monster', 'Toon Monster',
+  'Union Effect Monster', 'Gemini Monster', 'Spirit Monster', 'Tuner Monster',
+  'Pendulum Normal Monster', 'Pendulum Effect Monster',
+  'Ritual Monster', 'Ritual Effect Monster',
+  'Fusion Monster', 'Pendulum Effect Fusion Monster',
+  'Synchro Monster', 'Synchro Tuner Monster', 'Synchro Pendulum Effect Monster',
+  'XYZ Monster', 'XYZ Pendulum Effect Monster',
+  'Link Monster',
+];
+const SPELL_TYPES = ['Spell Card'];
+const TRAP_TYPES  = ['Trap Card'];
 
 const ATTRIBUTES = ['DARK', 'LIGHT', 'EARTH', 'WATER', 'FIRE', 'WIND', 'DIVINE'];
+const LEVELS = [1,2,3,4,5,6,7,8,9,10,11,12];
+const BAN_STATUS = ['Forbidden', 'Limited', 'Semi-Limited'];
+const ORDER_OPTIONS = [
+  { value: 'name',  label: 'Name (A–Z)' },
+  { value: 'atk',   label: 'ATK (High)' },
+  { value: 'def',   label: 'DEF (High)' },
+  { value: 'level', label: 'Level (High)' },
+];
 
 @Component({
   selector: 'app-card-browser',
@@ -22,46 +46,123 @@ export class CardBrowserComponent implements OnInit {
   private readonly cardService = inject(CardService);
   private readonly collectionService = inject(CollectionService);
 
-  readonly cardTypes = CARD_TYPES;
   readonly attributes = ATTRIBUTES;
+  readonly levels = LEVELS;
+  readonly banStatuses = BAN_STATUS;
+  readonly orderOptions = ORDER_OPTIONS;
+  readonly monsterTypes = MONSTER_TYPES;
+  readonly spellTypes = SPELL_TYPES;
+  readonly trapTypes = TRAP_TYPES;
 
-  searchName = '';
-  selectedType = '';
-  selectedAttribute = '';
+  // Filter state
+  filterName = '';
+  filterDesc = '';
+  filterCategory = '';    // Monster / Spell / Trap
+  filterType = '';
+  filterRace = '';
+  filterAttribute = '';
+  filterLevel = '';
+  filterMinAtk = '';
+  filterMaxAtk = '';
+  filterMinDef = '';
+  filterMaxDef = '';
+  filterBan = '';
+  filterOrder = 'name';
+
+  // Derived type/race lists based on category
+  get availableTypes(): string[] {
+    if (this.filterCategory === 'Monster') return MONSTER_TYPES;
+    if (this.filterCategory === 'Spell')   return SPELL_TYPES;
+    if (this.filterCategory === 'Trap')    return TRAP_TYPES;
+    return [...MONSTER_TYPES, ...SPELL_TYPES, ...TRAP_TYPES];
+  }
+
+  get availableRaces(): string[] {
+    if (this.filterCategory === 'Monster') return MONSTER_RACES;
+    if (this.filterCategory === 'Spell')   return SPELL_RACES;
+    if (this.filterCategory === 'Trap')    return TRAP_RACES;
+    return [...MONSTER_RACES, ...SPELL_RACES, ...TRAP_RACES].filter(
+      (v, i, a) => a.indexOf(v) === i
+    );
+  }
+
+  get showMonsterFilters(): boolean {
+    return !this.filterCategory || this.filterCategory === 'Monster';
+  }
 
   result = signal<PagedResult<Card> | null>(null);
   loading = signal(false);
   syncing = signal(false);
   syncMessage = signal('');
+  currentPage = signal(1);
 
   selectedCard = signal<Card | null>(null);
   addingToCollection = signal(false);
   addSuccess = signal(false);
 
-  currentPage = signal(1);
-
   ngOnInit(): void {
     this.loadCards();
+  }
+
+  onCategoryChange(): void {
+    // Reset dependent filters when category changes
+    this.filterType = '';
+    this.filterRace = '';
+    if (this.filterCategory !== 'Monster') {
+      this.filterAttribute = '';
+      this.filterLevel = '';
+      this.filterMinAtk = '';
+      this.filterMaxAtk = '';
+      this.filterMinDef = '';
+      this.filterMaxDef = '';
+    }
+    this.search();
+  }
+
+  search(): void {
+    this.loadCards(1);
+  }
+
+  reset(): void {
+    this.filterName = '';
+    this.filterDesc = '';
+    this.filterCategory = '';
+    this.filterType = '';
+    this.filterRace = '';
+    this.filterAttribute = '';
+    this.filterLevel = '';
+    this.filterMinAtk = '';
+    this.filterMaxAtk = '';
+    this.filterMinDef = '';
+    this.filterMaxDef = '';
+    this.filterBan = '';
+    this.filterOrder = 'name';
+    this.loadCards(1);
   }
 
   loadCards(page = 1): void {
     this.currentPage.set(page);
     this.loading.set(true);
-    const filter: CardFilter = {
-      page,
-      pageSize: 20,
-      name: this.searchName || undefined,
-      type: this.selectedType || undefined,
-      attribute: this.selectedAttribute || undefined,
+    const f: CardFilter = {
+      page, pageSize: 20,
+      name:      this.filterName      || undefined,
+      desc:      this.filterDesc      || undefined,
+      category:  this.filterCategory  || undefined,
+      type:      this.filterType      || undefined,
+      race:      this.filterRace      || undefined,
+      attribute: this.filterAttribute || undefined,
+      level:     this.filterLevel     ? +this.filterLevel     : undefined,
+      minAtk:    this.filterMinAtk    ? +this.filterMinAtk    : undefined,
+      maxAtk:    this.filterMaxAtk    ? +this.filterMaxAtk    : undefined,
+      minDef:    this.filterMinDef    ? +this.filterMinDef    : undefined,
+      maxDef:    this.filterMaxDef    ? +this.filterMaxDef    : undefined,
+      banTcg:    this.filterBan       || undefined,
+      orderBy:   this.filterOrder     || undefined,
     };
-    this.cardService.getCards(filter).subscribe({
+    this.cardService.getCards(f).subscribe({
       next: r => { this.result.set(r); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
-  }
-
-  search(): void {
-    this.loadCards(1);
   }
 
   openDetail(card: Card): void {
@@ -76,10 +177,7 @@ export class CardBrowserComponent implements OnInit {
   addToCollection(card: Card): void {
     this.addingToCollection.set(true);
     this.collectionService.addCard({ cardId: card.id, quantity: 1 }).subscribe({
-      next: () => {
-        this.addingToCollection.set(false);
-        this.addSuccess.set(true);
-      },
+      next: () => { this.addingToCollection.set(false); this.addSuccess.set(true); },
       error: () => this.addingToCollection.set(false)
     });
   }
@@ -94,27 +192,11 @@ export class CardBrowserComponent implements OnInit {
         this.loadCards(1);
         setTimeout(() => this.syncMessage.set(''), 5000);
       },
-      error: () => {
-        this.syncing.set(false);
-        this.syncMessage.set('Sync failed. Please try again.');
-      }
+      error: () => { this.syncing.set(false); this.syncMessage.set('Sync failed.'); }
     });
   }
 
   isMonster(card: Card): boolean {
     return card.type?.toLowerCase().includes('monster') ?? false;
-  }
-
-  typeColor(card: Card): string {
-    const f = (card.frameType ?? '').toLowerCase();
-    if (f.includes('spell')) return '#1d7a5a';
-    if (f.includes('trap')) return '#8a1a7a';
-    if (f.includes('fusion')) return '#7a4a9a';
-    if (f.includes('synchro')) return '#888';
-    if (f.includes('xyz')) return '#2a2a3a';
-    if (f.includes('link')) return '#1a4a8a';
-    if (f.includes('ritual')) return '#2255aa';
-    if (f.includes('effect')) return '#b06020';
-    return '#c8a428';
   }
 }

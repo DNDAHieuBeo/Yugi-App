@@ -21,6 +21,10 @@ public class CardService(
 
         if (!string.IsNullOrWhiteSpace(filter.Name))
             query = query.Where(c => c.Name.Contains(filter.Name));
+        if (!string.IsNullOrWhiteSpace(filter.Desc))
+            query = query.Where(c => c.Desc.Contains(filter.Desc));
+        if (!string.IsNullOrWhiteSpace(filter.Category))
+            query = query.Where(c => c.Type.Contains(filter.Category));
         if (!string.IsNullOrWhiteSpace(filter.Type))
             query = query.Where(c => c.Type == filter.Type);
         if (!string.IsNullOrWhiteSpace(filter.Race))
@@ -29,12 +33,30 @@ public class CardService(
             query = query.Where(c => c.Attribute == filter.Attribute);
         if (!string.IsNullOrWhiteSpace(filter.Archetype))
             query = query.Where(c => c.Archetype == filter.Archetype);
+        if (filter.Level.HasValue)
+            query = query.Where(c => c.Level == filter.Level);
+        if (filter.MinAtk.HasValue)
+            query = query.Where(c => c.Atk >= filter.MinAtk);
+        if (filter.MaxAtk.HasValue)
+            query = query.Where(c => c.Atk <= filter.MaxAtk);
+        if (filter.MinDef.HasValue)
+            query = query.Where(c => c.Def >= filter.MinDef);
+        if (filter.MaxDef.HasValue)
+            query = query.Where(c => c.Def <= filter.MaxDef);
         if (!string.IsNullOrWhiteSpace(filter.BanTcg))
             query = query.Where(c => c.BanTcg == filter.BanTcg);
 
         var total = await query.CountAsync();
-        var items = await query
-            .OrderBy(c => c.Name)
+
+        IQueryable<Card> ordered = filter.OrderBy switch
+        {
+            "atk"   => query.OrderByDescending(c => c.Atk),
+            "def"   => query.OrderByDescending(c => c.Def),
+            "level" => query.OrderByDescending(c => c.Level),
+            _       => query.OrderBy(c => c.Name)
+        };
+
+        var items = await ordered
             .Skip((filter.Page - 1) * filter.PageSize)
             .Take(filter.PageSize)
             .Select(c => ToDto(c))

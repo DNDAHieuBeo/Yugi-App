@@ -61,10 +61,7 @@
         <div>
           <label for="email" class="block text-sm font-medium mb-1" style="color: var(--color-text)">Email</label>
           <input id="email" type="email" formControlName="email" class="input-base"
-            [class.border-red-500]="isInvalid('email')" placeholder="you@example.com" autocomplete="email" />
-          @if (isInvalid('email')) {
-          <p class="mt-1 text-xs text-red-500">Please enter a valid email address</p>
-          }
+            placeholder="you@example.com" autocomplete="email" />
         </div>
 
         <!-- Password -->
@@ -72,7 +69,7 @@
           <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text)">Password</label>
           <div class="relative">
             <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
-              class="input-base pr-10" [class.border-red-500]="isInvalid('password')" placeholder="••••••••"
+              class="input-base pr-10" placeholder="••••••••"
               autocomplete="current-password" />
             <button type="button" (click)="showPassword.set(!showPassword())"
               class="absolute inset-y-0 right-0 flex items-center pr-3" style="color: var(--color-text-muted)"
@@ -95,9 +92,6 @@
               }
             </button>
           </div>
-          @if (isInvalid('password')) {
-          <p class="mt-1 text-xs text-red-500">Password must be at least 6 characters</p>
-          }
         </div>
 
         <!-- Forgot password link -->
@@ -110,7 +104,7 @@
 
         <!-- Submit -->
         <button type="submit" class="btn-primary w-full py-2.5 flex items-center justify-center gap-2"
-          [disabled]="loading()">
+          [disabled]="loading() || form.invalid">
           @if (loading()) {
           <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" />
