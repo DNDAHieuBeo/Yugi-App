@@ -21,17 +21,15 @@
     <!-- Logo -->
     <div class="text-center mb-8">
       <img src="/icons/CardVault_logo.svg" alt="CardVault" class="w-36 h-36 mx-auto mb-4 rounded-3xl" />
-
-
     </div>
 
     <!-- Card -->
     <div class="card-surface p-8 space-y-6">
 
-      <!-- Error alert -->
+      <!-- Server error alert -->
       @if (errorMessage()) {
       <div class="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700
-                    dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+                  dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
         <svg xmlns="http://www.w3.org/2000/svg" class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
           <path fill-rule="evenodd"
             d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -43,10 +41,10 @@
 
       <!-- Form -->
       <form [formGroup]="form" (ngSubmit)="onSubmit()" class="space-y-5" novalidate>
+
         <!-- Welcome header -->
         <div class="pb-5 border-b" style="border-color: var(--color-border)">
-          <p class="text-xs uppercase tracking-widest font-semibold mb-1"
-             style="color: var(--color-text-muted)">Welcome to</p>
+          <p class="text-xs uppercase tracking-widest font-semibold mb-1" style="color: var(--color-text-muted)">Welcome to</p>
           <h2 class="text-2xl font-bold tracking-tight"
               style="background: linear-gradient(135deg, var(--color-primary), #5de8b5);
                      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -57,14 +55,12 @@
             Sign in to manage your card collection
           </p>
         </div>
+
         <!-- Email -->
         <div>
           <label for="email" class="block text-sm font-medium mb-1" style="color: var(--color-text)">Email</label>
-          <input id="email" type="text" formControlName="email" class="input-base"
-            placeholder="you@example.com" autocomplete="email" />
-          @if (isInvalid('email')) {
-            <p class="mt-1 text-xs text-red-500">Please enter a valid email address.</p>
-          }
+          <input id="email" type="text" formControlName="email"
+            class="input-base" placeholder="you@example.com" autocomplete="email" />
         </div>
 
         <!-- Password -->
@@ -72,11 +68,10 @@
           <label for="password" class="block text-sm font-medium mb-1" style="color: var(--color-text)">Password</label>
           <div class="relative">
             <input id="password" [type]="showPassword() ? 'text' : 'password'" formControlName="password"
-              class="input-base pr-10" placeholder="••••••••"
-              autocomplete="current-password" />
+              class="input-base pr-10" placeholder="••••••••" autocomplete="current-password" />
             <button type="button" (click)="showPassword.set(!showPassword())"
-              class="absolute inset-y-0 right-0 flex items-center pr-3" style="color: var(--color-text-muted)"
-              tabindex="-1">
+              class="absolute inset-y-0 right-0 flex items-center pr-3"
+              style="color: var(--color-text-muted)" tabindex="-1">
               @if (showPassword()) {
               <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
@@ -95,12 +90,9 @@
               }
             </button>
           </div>
-          @if (isInvalid('password')) {
-            <p class="mt-1 text-xs text-red-500">Password must be at least 6 characters.</p>
-          }
         </div>
 
-        <!-- Forgot password link -->
+        <!-- Forgot password -->
         <div class="flex justify-end">
           <a routerLink="/forgot-password" class="text-sm font-medium hover:underline"
             style="color: var(--color-primary)">
@@ -109,7 +101,8 @@
         </div>
 
         <!-- Submit -->
-        <button type="submit" class="btn-primary w-full py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        <button type="submit"
+          class="btn-primary w-full py-2.5 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           [disabled]="loading()">
           @if (loading()) {
           <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -121,6 +114,7 @@
           Sign in
           }
         </button>
+
       </form>
 
       <!-- Register link -->
@@ -128,6 +122,7 @@
         Don't have an account?
         <a routerLink="/register" class="font-semibold hover:underline" style="color: var(--color-primary)">Sign up</a>
       </p>
+
     </div>
   </div>
 </div>

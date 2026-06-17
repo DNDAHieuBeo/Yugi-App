@@ -1,6 +1,7 @@
 import { Component, signal, inject } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { resolveApiError } from '../../../core/utils/error.utils';
@@ -22,31 +23,29 @@ export class LoginComponent {
   readonly showPassword = signal(false);
 
   readonly form = this.fb.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    email: [''],
+    password: [''],
   });
 
   onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+    this.errorMessage.set('');
+
+    const email = (this.form.getRawValue().email ?? '').trim();
+    const password = (this.form.getRawValue().password ?? '').trim();
+
+    if (!email || !password) {
+      this.errorMessage.set('Please enter your email and password.');
       return;
     }
 
     this.loading.set(true);
-    this.errorMessage.set('');
 
-    const { email, password } = this.form.getRawValue();
-    this.authService.login({ email: email!, password: password! }).subscribe({
-      next: () => this.router.navigate(['/cards']),
-      error: err => {
-        this.errorMessage.set(resolveApiError(err));
-        this.loading.set(false);
-      },
-    });
-  }
-
-  isInvalid(field: string): boolean {
-    const control = this.form.get(field);
-    return !!(control?.invalid && control?.touched);
+    this.authService
+      .login({ email, password })
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: () => this.router.navigate(['/cards']),
+        error: (err) => this.errorMessage.set(resolveApiError(err)),
+      });
   }
 }
