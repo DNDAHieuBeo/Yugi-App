@@ -40,7 +40,7 @@ frontend/
 │   ├── index.html
 │   └── styles.scss              <- Global styles + Tailwind imports
 ├── public/
-│   └── favicon.ico
+│   
 ├── angular.json
 ├── tailwind.config.js
 ├── tsconfig.json

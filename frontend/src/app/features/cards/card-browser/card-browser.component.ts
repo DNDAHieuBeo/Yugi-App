@@ -133,7 +133,7 @@ export class CardBrowserComponent implements OnInit {
     this.currentPage.set(page);
     this.loading.set(true);
     const f: CardFilter = {
-      page, pageSize: 20,
+      page, pageSize: 24,
       name:      this.filterName      || undefined,
       desc:      this.filterDesc      || undefined,
       category:  this.filterCategory  || undefined,
