@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, finalize, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResponse, CurrentUser, LoginDto, RegisterDto, RefreshTokenDto } from '../models/auth.model';
+import { AuthResponse, CurrentUser, ForgotPasswordDto, LoginDto, RegisterDto, RefreshTokenDto, ResetPasswordDto } from '../models/auth.model';
 
 const REFRESH_TOKEN_KEY = 'cardvault-refresh-token';
 
@@ -62,6 +62,14 @@ export class AuthService {
     return this.http.post<AuthResponse>(`${this.api}/refresh`, { refreshToken } as RefreshTokenDto).pipe(
       tap(res => this.setSession(res))
     );
+  }
+
+  forgotPassword(dto: ForgotPasswordDto): Observable<void> {
+    return this.http.post<void>(`${this.api}/forgot-password`, dto);
+  }
+
+  resetPassword(dto: ResetPasswordDto): Observable<void> {
+    return this.http.post<void>(`${this.api}/reset-password`, dto);
   }
 
   logout(): void {

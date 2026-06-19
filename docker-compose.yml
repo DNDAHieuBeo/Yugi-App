@@ -29,6 +29,12 @@ services:
       - JwtSettings__SecretKey=CardVaultSuperSecretKey2026MustBe32CharsLong!
       - JwtSettings__Issuer=CardVaultAPI
       - JwtSettings__Audience=CardVaultClient
+      - FrontendUrl=http://localhost:4200
+      - EmailSettings__SmtpHost=smtp.gmail.com
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SenderName=CardVault
+      - EmailSettings__SenderEmail=${EMAIL_SENDER}
+      - EmailSettings__AppPassword=${EMAIL_APP_PASSWORD}
     depends_on:
       db:
         condition: service_healthy

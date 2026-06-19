@@ -10,3 +10,11 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Secrets — never commit these
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+.env
+.env.*
+!.env.example

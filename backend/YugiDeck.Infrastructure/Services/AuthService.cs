@@ -16,7 +16,8 @@ namespace YugiDeck.Infrastructure.Services;
 public class AuthService(
     UserManager<IdentityUser> userManager,
     AppDbContext db,
-    IConfiguration config) : IAuthService
+    IConfiguration config,
+    IEmailService emailService) : IAuthService
 {
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request)
     {
@@ -71,6 +72,28 @@ public class AuthService(
             token.IsRevoked = true;
             await db.SaveChangesAsync();
         }
+    }
+
+    public async Task ForgotPasswordAsync(string email)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null) return; // silent — don't reveal whether email exists
+
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var frontendUrl = config["FrontendUrl"] ?? "http://localhost:4200";
+        var resetLink = $"{frontendUrl}/reset-password?email={Uri.EscapeDataString(email)}&token={Uri.EscapeDataString(token)}";
+
+        await emailService.SendPasswordResetAsync(email, user.UserName ?? email, resetLink);
+    }
+
+    public async Task ResetPasswordAsync(ResetPasswordRequest request)
+    {
+        var user = await userManager.FindByEmailAsync(request.Email)
+            ?? throw new InvalidOperationException("Invalid request.");
+
+        var result = await userManager.ResetPasswordAsync(user, request.Token, request.NewPassword);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
     }
 
     private async Task<AuthResponse> BuildResponseAsync(IdentityUser user)

@@ -25,3 +25,13 @@ export interface CurrentUser {
   userId: string;
   username: string;
 }
+
+export interface ForgotPasswordDto {
+  email: string;
+}
+
+export interface ResetPasswordDto {
+  email: string;
+  token: string;
+  newPassword: string;
+}

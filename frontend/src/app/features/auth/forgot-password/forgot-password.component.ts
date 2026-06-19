@@ -2,6 +2,8 @@ import { Component, signal, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ThemeService } from '../../../core/services/theme.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { resolveApiError } from '../../../core/utils/error.utils';
 
 @Component({
   selector: 'app-forgot-password',
@@ -11,6 +13,7 @@ import { ThemeService } from '../../../core/services/theme.service';
 })
 export class ForgotPasswordComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
   readonly themeService = inject(ThemeService);
 
   readonly loading = signal(false);
@@ -30,10 +33,16 @@ export class ForgotPasswordComponent {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    setTimeout(() => {
-      this.loading.set(false);
-      this.submitted.set(true);
-    }, 1000);
+    this.authService.forgotPassword({ email: this.form.value.email! }).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.submitted.set(true);
+      },
+      error: err => {
+        this.loading.set(false);
+        this.errorMessage.set(resolveApiError(err));
+      }
+    });
   }
 
   isInvalid(field: string): boolean {
