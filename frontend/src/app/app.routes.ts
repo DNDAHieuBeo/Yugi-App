@@ -48,6 +48,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/decks/deck-builder/deck-builder.component').then(m => m.DeckBuilderComponent)
       },
       {
+        path: 'market',
+        loadComponent: () => import('./features/cards/card-market/card-market.component').then(m => m.CardMarketComponent)
+      },
+      {
         path: 'duel',
         loadComponent: () => import('./features/duel/score-board/score-board.component').then(m => m.ScoreBoardComponent)
       }

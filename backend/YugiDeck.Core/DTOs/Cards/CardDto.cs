@@ -17,4 +17,8 @@ public class CardDto
     public string? ImageUrlSmall { get; set; }
     public string? BanTcg { get; set; }
     public string? BanOcg { get; set; }
+    public decimal? CardmarketPrice { get; set; }
+    public decimal? TcgplayerPrice { get; set; }
+    public decimal? EbayPrice { get; set; }
+    public decimal? AmazonPrice { get; set; }
 }

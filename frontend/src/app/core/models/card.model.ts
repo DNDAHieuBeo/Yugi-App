@@ -14,6 +14,22 @@ export interface Card {
   imageUrlSmall?: string;
   banTcg?: string;
   banOcg?: string;
+  cardmarketPrice?: number;
+  tcgplayerPrice?: number;
+  ebayPrice?: number;
+  amazonPrice?: number;
+}
+
+export interface MarketFilter {
+  name?: string;
+  category?: string;
+  archetype?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  priceSource?: 'cardmarket' | 'tcgplayer' | 'ebay' | 'amazon';
+  orderBy?: 'price_desc' | 'price_asc' | 'name';
+  page?: number;
+  pageSize?: number;
 }
 
 export interface CardFilter {

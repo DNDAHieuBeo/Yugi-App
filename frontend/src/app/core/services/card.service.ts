@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Card, CardFilter, PagedResult } from '../models/card.model';
+import { Card, CardFilter, MarketFilter, PagedResult } from '../models/card.model';
 
 @Injectable({ providedIn: 'root' })
 export class CardService {
@@ -28,6 +28,20 @@ export class CardService {
     if (filter.page) params = params.set('page', filter.page.toString());
     if (filter.pageSize) params = params.set('pageSize', filter.pageSize.toString());
     return this.http.get<PagedResult<Card>>(this.api, { params });
+  }
+
+  getMarketCards(filter: MarketFilter = {}): Observable<PagedResult<Card>> {
+    let params = new HttpParams();
+    if (filter.name)       params = params.set('name', filter.name);
+    if (filter.category)   params = params.set('category', filter.category);
+    if (filter.archetype)  params = params.set('archetype', filter.archetype);
+    if (filter.minPrice != null) params = params.set('minPrice', filter.minPrice.toString());
+    if (filter.maxPrice != null) params = params.set('maxPrice', filter.maxPrice.toString());
+    if (filter.priceSource) params = params.set('priceSource', filter.priceSource);
+    if (filter.orderBy)     params = params.set('orderBy', filter.orderBy);
+    if (filter.page)        params = params.set('page', filter.page.toString());
+    if (filter.pageSize)    params = params.set('pageSize', filter.pageSize.toString());
+    return this.http.get<PagedResult<Card>>(`${this.api}/market`, { params });
   }
 
   getCard(id: number): Observable<Card> {

@@ -1,0 +1,205 @@
+<div class="h-full flex flex-col" style="background-color: var(--color-bg)">
+
+  <!-- Header -->
+  <div class="px-6 py-4 border-b" style="border-color: var(--color-border)">
+    <div class="flex items-center gap-3 mb-3">
+      <div class="flex-1">
+        <h1 class="text-xl font-bold" style="color: var(--color-text)">Card Market</h1>
+        @if (result()) {
+          <p class="text-xs mt-0.5" style="color: var(--color-text-muted)">
+            {{ result()!.totalCount.toLocaleString() }} cards with prices
+          </p>
+        }
+      </div>
+    </div>
+
+    <!-- Controls row -->
+    <div class="flex flex-wrap items-end gap-3">
+
+      <!-- Search -->
+      <div class="relative flex-1 min-w-48">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"
+             style="color: var(--color-text-muted)">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input [(ngModel)]="filterName" (keyup.enter)="onSearch()"
+               placeholder="Search card name..." class="input-base pl-9 pr-4 text-sm py-2"/>
+      </div>
+
+      <!-- Category -->
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color: var(--color-text-muted)">Type</label>
+        <select [(ngModel)]="filterCategory" (change)="onSearch()" class="input-base text-sm py-2 min-w-32">
+          <option value="">All types</option>
+          <option value="Monster">Monster</option>
+          <option value="Spell">Spell</option>
+          <option value="Trap">Trap</option>
+        </select>
+      </div>
+
+      <!-- Price range -->
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color: var(--color-text-muted)">Price ($)</label>
+        <div class="flex items-center gap-1.5">
+          <input [(ngModel)]="filterMinPrice" (keyup.enter)="onSearch()" type="number" min="0" step="0.01"
+                 placeholder="min" class="input-base text-sm py-2 text-center w-20"/>
+          <span class="text-xs" style="color: var(--color-text-muted)">–</span>
+          <input [(ngModel)]="filterMaxPrice" (keyup.enter)="onSearch()" type="number" min="0" step="0.01"
+                 placeholder="max" class="input-base text-sm py-2 text-center w-20"/>
+        </div>
+      </div>
+
+      <!-- Price source tabs -->
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color: var(--color-text-muted)">Source</label>
+        <div class="flex rounded-lg overflow-hidden border" style="border-color: var(--color-border)">
+          @for (s of priceSources; track s.value) {
+            <button
+              (click)="priceSource = s.value; onSourceChange()"
+              class="px-3 py-1.5 text-xs font-medium transition-colors"
+              [style.background-color]="priceSource === s.value ? 'var(--color-primary)' : 'var(--color-surface)'"
+              [style.color]="priceSource === s.value ? '#fff' : 'var(--color-text-muted)'"
+            >{{ s.label }}</button>
+          }
+        </div>
+      </div>
+
+      <!-- Sort -->
+      <div>
+        <label class="block text-xs font-medium mb-1" style="color: var(--color-text-muted)">Sort</label>
+        <select [(ngModel)]="sortOrder" (change)="onSortChange()" class="input-base text-sm py-2">
+          @for (o of sortOptions; track o.value) {
+            <option [value]="o.value">{{ o.label }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Search + Clear buttons -->
+      <div class="flex gap-2">
+        <button appBtn (click)="onSearch()" class="px-4 py-2 text-sm">Search</button>
+        @if (filterName || filterCategory || filterMinPrice != null || filterMaxPrice != null) {
+          <button appBtn variant="secondary" (click)="clear()" class="px-3 py-2 text-sm">Clear</button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Card grid -->
+  <div class="flex-1 overflow-y-auto px-6 py-4">
+
+    @if (loading()) {
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
+        @for (i of [1,2,3,4,5,6,7,8,9,10,11,12]; track i) {
+          <div class="rounded-xl overflow-hidden animate-pulse" style="background-color: var(--color-surface)">
+            <div class="aspect-[59/86]" style="background-color: var(--color-surface-2)"></div>
+            <div class="p-2 space-y-1.5">
+              <div class="h-3 rounded" style="background-color: var(--color-surface-2)"></div>
+              <div class="h-4 rounded w-1/2" style="background-color: var(--color-surface-2)"></div>
+            </div>
+          </div>
+        }
+      </div>
+
+    } @else if (!result() || result()!.items.length === 0) {
+      <div class="flex flex-col items-center justify-center py-20 gap-3">
+        <svg class="w-16 h-16" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+             style="color: var(--color-text-muted)">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p class="font-medium" style="color: var(--color-text)">No price data found</p>
+        <p class="text-sm text-center max-w-xs" style="color: var(--color-text-muted)">
+          Sync cards from Card Browser first — prices are fetched from YGOProDeck during sync.
+        </p>
+      </div>
+
+    } @else {
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+        @for (card of result()!.items; track card.id) {
+          <div
+            class="rounded-xl overflow-hidden cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl"
+            style="background-color: var(--color-surface); border: 1px solid var(--color-border)"
+            (click)="selectedCard.set(card)"
+          >
+            <!-- Card image -->
+            <div class="aspect-[59/86] relative overflow-hidden" style="background-color: var(--color-surface-2)">
+              @if (card.imageUrlSmall) {
+                <img [src]="card.imageUrlSmall" [alt]="card.name" class="w-full h-full object-cover"/>
+              }
+              <!-- Ban badge overlay -->
+              @if (card.banTcg) {
+                <span class="absolute top-1.5 right-1.5 text-[10px] px-1.5 py-0.5 rounded-md font-bold shadow"
+                  [style.background-color]="card.banTcg === 'Forbidden' ? '#dc2626' : card.banTcg === 'Limited' ? '#ea580c' : '#ca8a04'"
+                  style="color: #fff">
+                  {{ card.banTcg === 'Forbidden' ? 'FBD' : card.banTcg === 'Limited' ? 'LMT' : 'S-LMT' }}
+                </span>
+              }
+            </div>
+
+            <!-- Info -->
+            <div class="p-3 space-y-2">
+              <!-- Name -->
+              <p class="text-sm font-semibold leading-snug line-clamp-2" style="color: var(--color-text); min-height: 2.5rem">
+                {{ card.name }}
+              </p>
+
+              <!-- Featured price (selected source) -->
+              <div class="flex items-baseline gap-1">
+                <span class="text-xl font-bold" style="color: var(--color-primary)">
+                  {{ formatPrice(priceOf(card)) }}
+                </span>
+                <span class="text-xs" style="color: var(--color-text-muted)">
+                  {{ priceSource === 'cardmarket' ? 'CM' : priceSource === 'tcgplayer' ? 'TCG' : priceSource === 'ebay' ? 'eBay' : 'AMZ' }}
+                </span>
+              </div>
+
+              <!-- Other prices -->
+              <div class="pt-1 border-t space-y-1" style="border-color: var(--color-border)">
+                @if (card.cardmarketPrice && priceSource !== 'cardmarket') {
+                  <div class="flex justify-between text-xs">
+                    <span style="color: var(--color-text-muted)">Cardmarket</span>
+                    <span class="font-medium" style="color: var(--color-text)">${{ card.cardmarketPrice.toFixed(2) }}</span>
+                  </div>
+                }
+                @if (card.tcgplayerPrice && priceSource !== 'tcgplayer') {
+                  <div class="flex justify-between text-xs">
+                    <span style="color: var(--color-text-muted)">TCGPlayer</span>
+                    <span class="font-medium" style="color: var(--color-text)">${{ card.tcgplayerPrice.toFixed(2) }}</span>
+                  </div>
+                }
+                @if (card.ebayPrice && priceSource !== 'ebay') {
+                  <div class="flex justify-between text-xs">
+                    <span style="color: var(--color-text-muted)">eBay</span>
+                    <span class="font-medium" style="color: var(--color-text)">${{ card.ebayPrice.toFixed(2) }}</span>
+                  </div>
+                }
+                @if (card.amazonPrice && priceSource !== 'amazon') {
+                  <div class="flex justify-between text-xs">
+                    <span style="color: var(--color-text-muted)">Amazon</span>
+                    <span class="font-medium" style="color: var(--color-text)">${{ card.amazonPrice.toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      @if (result()!.totalPages > 1) {
+        <div class="mt-6">
+          <app-pagination
+            [currentPage]="currentPage()"
+            [totalPages]="result()!.totalPages"
+            (pageChange)="load($event)"
+          />
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<app-card-detail-panel
+  [card]="selectedCard()"
+  (close)="selectedCard.set(null)"
+/>

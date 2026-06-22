@@ -24,6 +24,13 @@ public class CardsController(ICardService cardService) : ControllerBase
         return card is null ? NotFound() : Ok(card);
     }
 
+    [HttpGet("market")]
+    public async Task<IActionResult> GetMarket([FromQuery] MarketFilterParams filter)
+    {
+        var result = await cardService.GetMarketCardsAsync(filter);
+        return Ok(result);
+    }
+
     [HttpPost("sync")]
     public async Task<IActionResult> Sync()
     {
