@@ -4,11 +4,12 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ThemeService } from '../../../core/services/theme.service';
 import { Router } from '@angular/router';
 import { DialogComponent } from '../common/dialog/dialog.component';
+import { ProfileDialogComponent } from '../common/profile-dialog/profile-dialog.component';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, DialogComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, DialogComponent, ProfileDialogComponent],
   templateUrl: './app-shell.component.html',
   styles: [`
     .nav-link {
@@ -39,6 +40,11 @@ export class AppShellComponent {
   private readonly router = inject(Router);
 
   readonly logoutDialog = viewChild.required<DialogComponent>('logoutDialog');
+  readonly profileDialog = viewChild.required<ProfileDialogComponent>('profileDialog');
+
+  openProfile(): void {
+    this.profileDialog().open();
+  }
 
   readonly userInitial = () => {
     const name = this.authService.currentUser()?.username ?? '';

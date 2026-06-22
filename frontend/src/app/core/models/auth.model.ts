@@ -19,11 +19,23 @@ export interface AuthResponse {
   expiresIn: number;
   userId: string;
   username: string;
+  email: string;
 }
 
 export interface CurrentUser {
   userId: string;
   username: string;
+  email?: string;
+}
+
+export interface UpdateProfileDto {
+  username: string;
+  email: string;
+}
+
+export interface ChangePasswordDto {
+  currentPassword: string;
+  newPassword: string;
 }
 
 export interface ForgotPasswordDto {

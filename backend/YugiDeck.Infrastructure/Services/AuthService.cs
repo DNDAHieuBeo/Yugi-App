@@ -96,6 +96,50 @@ public class AuthService(
             throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
     }
 
+    public async Task<AuthResponse> UpdateProfileAsync(string userId, UpdateProfileRequest request)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new InvalidOperationException("User not found.");
+
+        // Check email taken by another user
+        if (!string.Equals(user.Email, request.Email, StringComparison.OrdinalIgnoreCase))
+        {
+            var existing = await userManager.FindByEmailAsync(request.Email);
+            if (existing is not null && existing.Id != userId)
+                throw new InvalidOperationException("Email is already in use.");
+
+            user.Email = request.Email;
+            user.NormalizedEmail = request.Email.ToUpperInvariant();
+        }
+
+        // Check username taken by another user
+        if (!string.Equals(user.UserName, request.Username, StringComparison.OrdinalIgnoreCase))
+        {
+            var existing = await userManager.FindByNameAsync(request.Username);
+            if (existing is not null && existing.Id != userId)
+                throw new InvalidOperationException("Username is already taken.");
+
+            user.UserName = request.Username;
+            user.NormalizedUserName = request.Username.ToUpperInvariant();
+        }
+
+        var result = await userManager.UpdateAsync(user);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+
+        return await BuildResponseAsync(user);
+    }
+
+    public async Task ChangePasswordAsync(string userId, ChangePasswordRequest request)
+    {
+        var user = await userManager.FindByIdAsync(userId)
+            ?? throw new InvalidOperationException("User not found.");
+
+        var result = await userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+            throw new InvalidOperationException(string.Join("; ", result.Errors.Select(e => e.Description)));
+    }
+
     private async Task<AuthResponse> BuildResponseAsync(IdentityUser user)
     {
         var accessToken = GenerateAccessToken(user);

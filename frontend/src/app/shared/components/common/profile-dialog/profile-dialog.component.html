@@ -1,0 +1,212 @@
+@if (visible()) {
+  <!-- Backdrop -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background: rgba(0,0,0,0.5); backdrop-filter: blur(2px)"
+       (click)="close()">
+
+    <!-- Panel -->
+    <div class="w-full max-w-md rounded-2xl shadow-xl overflow-hidden"
+         style="background-color: var(--color-surface); border: 1px solid var(--color-border)"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between px-6 py-4 border-b" style="border-color: var(--color-border)">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+               style="background: linear-gradient(135deg, var(--color-primary), #5de8b5)">
+            {{ authService.currentUser()?.username?.charAt(0)?.toUpperCase() }}
+          </div>
+          <div>
+            <p class="text-sm font-semibold" style="color: var(--color-text)">
+              {{ authService.currentUser()?.username }}
+            </p>
+            <p class="text-xs" style="color: var(--color-text-muted)">
+              {{ authService.currentUser()?.email }}
+            </p>
+          </div>
+        </div>
+        <button (click)="close()" class="p-1.5 rounded-lg transition-colors hover:opacity-70"
+                style="color: var(--color-text-muted)">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="flex border-b" style="border-color: var(--color-border)">
+        <button
+          (click)="switchTab('profile')"
+          class="flex-1 py-3 text-sm font-medium transition-colors"
+          [style.color]="activeTab() === 'profile' ? 'var(--color-primary)' : 'var(--color-text-muted)'"
+          [style.border-bottom]="activeTab() === 'profile' ? '2px solid var(--color-primary)' : '2px solid transparent'"
+        >
+          Edit Profile
+        </button>
+        <button
+          (click)="switchTab('password')"
+          class="flex-1 py-3 text-sm font-medium transition-colors"
+          [style.color]="activeTab() === 'password' ? 'var(--color-primary)' : 'var(--color-text-muted)'"
+          [style.border-bottom]="activeTab() === 'password' ? '2px solid var(--color-primary)' : '2px solid transparent'"
+        >
+          Change Password
+        </button>
+      </div>
+
+      <!-- Tab: Profile -->
+      @if (activeTab() === 'profile') {
+        <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="p-6 space-y-4" novalidate>
+
+          @if (profileError()) {
+            <div class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700
+                        dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+              <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              {{ profileError() }}
+            </div>
+          }
+          @if (profileSuccess()) {
+            <div class="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-700
+                        dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              {{ profileSuccess() }}
+            </div>
+          }
+
+          <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Username</label>
+            <input type="text" formControlName="username" class="input-base" placeholder="Your username" autocomplete="username"/>
+            @if (isInvalid('profile', 'username')) {
+              <p class="text-xs mt-1 text-red-500">Username must be 2–50 characters.</p>
+            }
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Email</label>
+            <input type="email" formControlName="email" class="input-base" placeholder="you@example.com" autocomplete="email"/>
+            @if (isInvalid('profile', 'email')) {
+              <p class="text-xs mt-1 text-red-500">Enter a valid email address.</p>
+            }
+          </div>
+
+          <div class="flex gap-3 justify-end pt-1">
+            <button type="button" (click)="close()" class="btn-secondary px-4 py-2 text-sm">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary px-4 py-2 text-sm flex items-center gap-2"
+                    [disabled]="profileLoading() || profileForm.pristine">
+              @if (profileLoading()) {
+                <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              }
+              Save changes
+            </button>
+          </div>
+        </form>
+      }
+
+      <!-- Tab: Change Password -->
+      @if (activeTab() === 'password') {
+        <form [formGroup]="passwordForm" (ngSubmit)="savePassword()" class="p-6 space-y-4" novalidate>
+
+          @if (passwordError()) {
+            <div class="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700
+                        dark:border-red-800 dark:bg-red-900/20 dark:text-red-400">
+              <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+              </svg>
+              {{ passwordError() }}
+            </div>
+          }
+          @if (passwordSuccess()) {
+            <div class="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-700
+                        dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
+              <svg class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              {{ passwordSuccess() }}
+            </div>
+          }
+
+          <!-- Current password -->
+          <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Current password</label>
+            <div class="relative">
+              <input [type]="showCurrent() ? 'text' : 'password'" formControlName="currentPassword"
+                     class="input-base pr-10" placeholder="Your current password" autocomplete="current-password"/>
+              <button type="button" (click)="showCurrent.set(!showCurrent())"
+                      class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-muted)">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  @if (showCurrent()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  }
+                </svg>
+              </button>
+            </div>
+            @if (isInvalid('password', 'currentPassword')) {
+              <p class="text-xs mt-1 text-red-500">Current password is required.</p>
+            }
+          </div>
+
+          <!-- New password -->
+          <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">New password</label>
+            <div class="relative">
+              <input [type]="showNew() ? 'text' : 'password'" formControlName="newPassword"
+                     class="input-base pr-10" placeholder="Min. 6 characters with a digit" autocomplete="new-password"/>
+              <button type="button" (click)="showNew.set(!showNew())"
+                      class="absolute right-3 top-1/2 -translate-y-1/2" style="color: var(--color-text-muted)">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  @if (showNew()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  }
+                </svg>
+              </button>
+            </div>
+            @if (isInvalid('password', 'newPassword')) {
+              <p class="text-xs mt-1 text-red-500">At least 6 characters with a digit required.</p>
+            }
+          </div>
+
+          <!-- Confirm password -->
+          <div>
+            <label class="block text-sm font-medium mb-1" style="color: var(--color-text)">Confirm new password</label>
+            <input [type]="showNew() ? 'text' : 'password'" formControlName="confirmPassword"
+                   class="input-base" placeholder="Repeat new password" autocomplete="new-password"/>
+            @if (passwordMismatch) {
+              <p class="text-xs mt-1 text-red-500">Passwords do not match.</p>
+            }
+          </div>
+
+          <div class="flex gap-3 justify-end pt-1">
+            <button type="button" (click)="close()" class="btn-secondary px-4 py-2 text-sm">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary px-4 py-2 text-sm flex items-center gap-2"
+                    [disabled]="passwordLoading()">
+              @if (passwordLoading()) {
+                <svg class="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+              }
+              Update password
+            </button>
+          </div>
+        </form>
+      }
+
+    </div>
+  </div>
+}

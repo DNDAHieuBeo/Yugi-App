@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { isPlatformBrowser } from '@angular/common';
 import { Observable, finalize, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthResponse, CurrentUser, ForgotPasswordDto, LoginDto, RegisterDto, RefreshTokenDto, ResetPasswordDto } from '../models/auth.model';
+import { AuthResponse, ChangePasswordDto, CurrentUser, ForgotPasswordDto, LoginDto, RegisterDto, RefreshTokenDto, ResetPasswordDto, UpdateProfileDto } from '../models/auth.model';
 
 const REFRESH_TOKEN_KEY = 'cardvault-refresh-token';
 
@@ -64,6 +64,16 @@ export class AuthService {
     );
   }
 
+  updateProfile(dto: UpdateProfileDto): Observable<AuthResponse> {
+    return this.http.put<AuthResponse>(`${this.api}/profile`, dto).pipe(
+      tap(res => this.setSession(res))
+    );
+  }
+
+  changePassword(dto: ChangePasswordDto): Observable<void> {
+    return this.http.put<void>(`${this.api}/change-password`, dto);
+  }
+
   forgotPassword(dto: ForgotPasswordDto): Observable<void> {
     return this.http.post<void>(`${this.api}/forgot-password`, dto);
   }
@@ -82,7 +92,7 @@ export class AuthService {
 
   private setSession(res: AuthResponse): void {
     this._accessToken.set(res.accessToken);
-    this._currentUser.set({ userId: res.userId, username: res.username });
+    this._currentUser.set({ userId: res.userId, username: res.username, email: res.email });
     if (this.isBrowser) {
       localStorage.setItem(REFRESH_TOKEN_KEY, res.refreshToken);
     }
